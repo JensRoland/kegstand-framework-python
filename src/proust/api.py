@@ -1,6 +1,10 @@
 import logging
+import os
 
-from .utils import api_response
+from .utils import (
+    api_response,
+    find_resource_modules,
+)
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -15,6 +19,23 @@ class ProustApi:
     def add_resource(self, resource):
         # Resource is a ApiResource object
         self.resources.append(resource)
+
+
+    def find_and_add_resources(self, source_root: str):
+        # Look through folder structure, importing and adding resources to the API.
+        # Expects a folder structure like this:
+        # api/
+        #   resources/
+        #       [resource_name]/
+        #           [resource_name].py which exposes a resource object named [resource_name]
+        resource_module_folders = find_resource_modules(source_root)
+        for resource_module_folder in resource_module_folders:
+            # Import the resource module
+            resource_module = __import__(resource_module_folder['module_path'], fromlist=resource_module_folder['fromlist'])
+            # Get the resource object from the module and add it to the API
+            self.add_resource(getattr(resource_module, resource_module_folder['name']))
+
+        return self.resources
 
 
     def export(self):
