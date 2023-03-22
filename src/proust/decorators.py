@@ -1,8 +1,8 @@
 import json
 import logging
-import urllib.parse
 
 from functools import wraps
+from urllib.parse import unquote_plus
 
 from .utils import api_response
 
@@ -135,7 +135,7 @@ class ApiResource:
         for i in range(len(segments)):
             # If the segment is a dynamic segment, it matches
             if method_segments[i].startswith(':'):
-                path_params[method_segments[i][1:]] = urllib.parse.unquote(segments[i])
+                path_params[method_segments[i][1:]] = unquote_plus(segments[i])
                 continue
 
             # If the segment doesn't match, the routes don't match
