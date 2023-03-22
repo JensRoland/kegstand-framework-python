@@ -81,22 +81,26 @@ class ApiResource:
     def _call_func_with_arguments(self, method, func, params, **kwargs):
         # Calls different function signatures depending on different method types
         # and whether or not auth is present:
+        #   - func()
         #   - func(params)
         #   - func(params, data)
-        #   - func(params, authorized_user_properties)
-        #   - func(params, data, authorized_user_properties)
+        #   - func(params, authorized_user)
+        #   - func(params, data, authorized_user)
+        #   - etc.
         #
         # May raise ApiError
-        args = [params]
+        func_kwargs = {}
+        if len(params) > 0:
+            func_kwargs["params"] = params
         if method in ['POST', 'PUT', 'PATCH']:
-            args.append(kwargs.get('data'))
+            func_kwargs["data"] = kwargs.get('data', {})
 
         # Add authorized user properties if they were passed in
         authorized_user_properties = kwargs.get('auth', None)
         if authorized_user_properties is not None:
-            args.append(authorized_user_properties)
+            func_kwargs["authorized_user"] = authorized_user_properties
 
-        return func(*args)
+        return func(**func_kwargs)
 
 
     def get_matching_route(self, httpMethod: str, route: str):
