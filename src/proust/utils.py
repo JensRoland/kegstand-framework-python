@@ -18,7 +18,7 @@ def find_resource_modules(source_folder: str) -> list:
     # Expects a folder structure like this:
     #   resources/
     #       [resource_name]/
-    #           [resource_name].py which exposes a resource object named [resource_name]
+    #           any.py which exposes a resource object named `api`
     resources = []
     resources_dir = os.path.join(source_folder, 'resources')
     # Loop over folders in resources_dir and import the resource modules
@@ -31,7 +31,7 @@ def find_resource_modules(source_folder: str) -> list:
             continue
         resources.append({
             'name': resource_name,
-            'module_path': f'api.resources.{resource_name}.{resource_name}',
-            'fromlist': [resource_name],
+            'module_path': f'api.resources.{resource_name}.any',
+            'fromlist': ['any'],
         })
     return resources

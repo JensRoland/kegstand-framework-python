@@ -27,13 +27,13 @@ class ProustApi:
         # api/
         #   resources/
         #       [resource_name]/
-        #           [resource_name].py which exposes a resource object named [resource_name]
+        #           any.py which exposes a resource object named `api`
         resource_module_folders = find_resource_modules(source_root)
         for resource_module_folder in resource_module_folders:
             # Import the resource module
             resource_module = __import__(resource_module_folder['module_path'], fromlist=resource_module_folder['fromlist'])
             # Get the resource object from the module and add it to the API
-            self.add_resource(getattr(resource_module, resource_module_folder['name']))
+            self.add_resource(getattr(resource_module, 'api'))
 
         return self.resources
 
