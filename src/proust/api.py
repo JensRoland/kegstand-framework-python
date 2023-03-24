@@ -4,9 +4,9 @@ from .utils import (
     api_response,
     find_resource_modules,
 )
+from . import Logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = Logger()
 
 # Class ProustApi provides a container for API resources and a method to add
 # resources to the API.

@@ -1,13 +1,13 @@
+import inspect
 import json
-import logging
 
 from functools import wraps
 from urllib.parse import unquote_plus
 
 from .utils import api_response
+from . import Logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = Logger()
 
 # ApiResource provides a resource object that provides decorators for get, post, put, and delete
 # methods. The resource object also provides a route property that can be used to get the
@@ -44,10 +44,16 @@ class ApiResource:
                     return api_response({'error': 'Invalid JSON data provided'}, 400)
 
                 try:
-                    # If the arg "auth" is set to True, then we require authorization
                     if kwargs.get('auth', False):
-                        if 'authorizer' not in event['requestContext']:
+                        auth_conditions = kwargs.get("auth")
+                        if not auth_conditions.evaluate(event):
                             return api_response({'error': 'Unauthorized'}, 401)
+
+                    # If the func has a 'claims' parameter, then we have to pass
+                    # in the authorized user properties (claims) from the authorizer
+                    if 'claims' in inspect.signature(func).parameters:
+                        if 'authorizer' not in event['requestContext']:
+                            return api_response({'error': 'Unauthorized (missing authorizer context)'}, 401)
 
                         # Call the function with the authorized user properties
                         response = self._call_func_with_arguments(
@@ -55,7 +61,7 @@ class ApiResource:
                             func,
                             params,
                             data=data,
-                            auth=event['requestContext']['authorizer']['claims']
+                            claims=event['requestContext']['authorizer']['claims']
                         )
                     else:
                         # Call the function with the correct arguments
@@ -80,12 +86,12 @@ class ApiResource:
 
     def _call_func_with_arguments(self, method, func, params, **kwargs):
         # Calls different function signatures depending on different method types
-        # and whether or not auth is present:
+        # and whether or not claims are present:
         #   - func()
         #   - func(params)
         #   - func(params, data)
-        #   - func(params, authorized_user)
-        #   - func(params, data, authorized_user)
+        #   - func(params, claims)
+        #   - func(params, data, claims)
         #   - etc.
         #
         # May raise ApiError
@@ -95,10 +101,10 @@ class ApiResource:
         if method in ['POST', 'PUT', 'PATCH']:
             func_kwargs["data"] = kwargs.get('data', {})
 
-        # Add authorized user properties if they were passed in
-        authorized_user_properties = kwargs.get('auth', None)
-        if authorized_user_properties is not None:
-            func_kwargs["authorized_user"] = authorized_user_properties
+        # Add authorized user properties (claims) if a 'claims' parameter was passed in
+        claims = kwargs.get('claims', None)
+        if claims is not None:
+            func_kwargs["claims"] = claims
 
         return func(**func_kwargs)
 
@@ -144,7 +150,41 @@ class ApiResource:
 
         # If we've made it this far, the routes match
         return path_params
-        
+
+
+class Auth:
+    def __init__(self):
+        self.conditions = []
+
+    @classmethod
+    def require(cls, claim):
+        instance = cls()
+        return instance._claim(claim)
+
+    def _claim(self, claim):
+        self.current_claim = claim
+        return self
+
+    def to_be(self, value):
+        self.conditions.append(lambda claims: claims.get(self.current_claim) == value)
+        return self
+
+    def gt(self, value):
+        self.conditions.append(lambda claims: int(claims.get(self.current_claim, 0)) > value)
+        return self
+
+    def and_(self, claim):
+        return self._claim(claim)
+
+    def evaluate(self, event):
+        if 'authorizer' not in event['requestContext']:
+            return False
+        claims = event['requestContext']['authorizer']['claims']
+        for condition in self.conditions:
+            if not condition(claims):
+                return False
+        return True
+
 
 class ApiError(Exception):
     def __init__(self, message, status_code=400):
