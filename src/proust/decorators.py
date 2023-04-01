@@ -48,29 +48,35 @@ class ApiResource:
                         auth_conditions = kwargs.get("auth")
                         if not auth_conditions.evaluate(event):
                             return api_response({'error': 'Unauthorized'}, 401)
+                    
+                    # If the func has a 'query' parameter, then we have to pass
+                    # in the query string parameters from the event
+                    query = None
+                    if 'query' in inspect.signature(func).parameters:
+                        query = event['queryStringParameters'] or {}
 
                     # If the func has a 'claims' parameter, then we have to pass
                     # in the authorized user properties (claims) from the authorizer
+                    claims = None
                     if 'claims' in inspect.signature(func).parameters:
                         if 'authorizer' not in event['requestContext']:
                             return api_response({'error': 'Unauthorized (missing authorizer context)'}, 401)
+                        claims = event['requestContext']['authorizer']['claims']
 
-                        # Call the function with the authorized user properties
-                        response = self._call_func_with_arguments(
-                            method,
-                            func,
-                            params,
-                            data=data,
-                            claims=event['requestContext']['authorizer']['claims']
-                        )
-                    else:
-                        # Call the function with the correct arguments
-                        response = self._call_func_with_arguments(method, func, params, data=data)
+                    # Call the function with the authorized user properties
+                    response = self._call_func_with_arguments(
+                        method,
+                        func,
+                        params,
+                        query=query,
+                        data=data,
+                        claims=claims,
+                    )
 
                 except ApiError as e:
                     return e.to_api_response()
 
-                return api_response(response)
+                return api_response(response, 200)
 
             self.methods.append({
                 'path': path,
@@ -88,10 +94,12 @@ class ApiResource:
         # Calls different function signatures depending on different method types
         # and whether or not claims are present:
         #   - func()
-        #   - func(params)
-        #   - func(params, data)
-        #   - func(params, claims)
-        #   - func(params, data, claims)
+        #   - func(params=params)
+        #   - func(query=query)
+        #   - func(params=params, query=query)
+        #   - func(params=params, data=data)
+        #   - func(params=params, claims=claims)
+        #   - func(params=params, query=query, data=data, claims=claims)
         #   - etc.
         #
         # May raise ApiError
@@ -100,6 +108,11 @@ class ApiResource:
             func_kwargs["params"] = params
         if method in ['POST', 'PUT', 'PATCH']:
             func_kwargs["data"] = kwargs.get('data', {})
+
+        # Add querystring parameters if a 'query' parameter was passed in
+        query = kwargs.get('query', None)
+        if query is not None:
+            func_kwargs["query"] = query
 
         # Add authorized user properties (claims) if a 'claims' parameter was passed in
         claims = kwargs.get('claims', None)
@@ -187,14 +200,15 @@ class Auth:
 
 
 class ApiError(Exception):
-    def __init__(self, message, status_code=400):
+    def __init__(self, error_message, status_code: int = 400):
         Exception.__init__(self)
-        self.message = message
+        self.error_message = error_message
         self.status_code = status_code
+        logger.warning(f"API Error (status {status_code}): {error_message}")
 
     def to_dict(self):
         rv = dict()
-        rv['message'] = self.message
+        rv['error'] = self.error_message
         return rv
 
     def to_api_response(self):
