@@ -8,9 +8,9 @@ from . import Logger
 
 logger = Logger()
 
-# Class ProustApi provides a container for API resources and a method to add
+# Class KegstandApi provides a container for API resources and a method to add
 # resources to the API.
-class ProustApi:
+class KegstandApi:
     def __init__(self):
         self.resources = []
 

@@ -23,7 +23,7 @@ tests-no-zope = ["cloudpickle", "cloudpickle", "hypothesis", "hypothesis", "mypy
 
 [[package]]
 name = "aws-lambda-powertools"
-version = "2.10.0"
+version = "2.11.0"
 description = "AWS Lambda Powertools is a developer toolkit to implement Serverless best practices and increase developer velocity."
 category = "main"
 optional = false
@@ -42,14 +42,14 @@ validation = ["fastjsonschema (>=2.14.5,<3.0.0)"]
 
 [[package]]
 name = "boto3"
-version = "1.26.97"
+version = "1.26.105"
 description = "The AWS SDK for Python"
 category = "main"
 optional = false
 python-versions = ">= 3.7"
 
 [package.dependencies]
-botocore = ">=1.29.97,<1.30.0"
+botocore = ">=1.29.105,<1.30.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.6.0,<0.7.0"
 
@@ -58,7 +58,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.29.97"
+version = "1.29.105"
 description = "Low-level, data-driven core of boto 3."
 category = "main"
 optional = false
@@ -254,16 +254,16 @@ attrs = [
     {file = "attrs-22.2.0.tar.gz", hash = "sha256:c9227bfc2f01993c03f68db37d1d15c9690188323c067c641f1a35ca58185f99"},
 ]
 aws-lambda-powertools = [
-    {file = "aws_lambda_powertools-2.10.0-py3-none-any.whl", hash = "sha256:92a20e6ab834208745dd667e1906c524c487fc0ccdec68e687d0498a611e10a4"},
-    {file = "aws_lambda_powertools-2.10.0.tar.gz", hash = "sha256:3b6c83dd6c5a446a257777aef38720ba08ab88136d4461c6ad753db7276ae507"},
+    {file = "aws_lambda_powertools-2.11.0-py3-none-any.whl", hash = "sha256:8a6515d8bef2e63d0e6ebf81291030681da86a10cbf1138d1577a220e446ef99"},
+    {file = "aws_lambda_powertools-2.11.0.tar.gz", hash = "sha256:d74e285532090e9b08cf349858d0712d33b70ed69cd65cb0f385304247393c6c"},
 ]
 boto3 = [
-    {file = "boto3-1.26.97-py3-none-any.whl", hash = "sha256:367a73c1ff04517849d8c4177fd775da2e258a3912ff6a497be258c30f509046"},
-    {file = "boto3-1.26.97.tar.gz", hash = "sha256:19762b6a1adbe1963e26b8280211ca148017c970a2e1386312a9fc8a0a17dbd5"},
+    {file = "boto3-1.26.105-py3-none-any.whl", hash = "sha256:f4951f8162905b96fd045e32853ba8cf707042faac846a23910817c508ef27d7"},
+    {file = "boto3-1.26.105.tar.gz", hash = "sha256:2914776e0138530ec6464d0e2f05b4aa18e9212ac920c48472f8a93650feaed2"},
 ]
 botocore = [
-    {file = "botocore-1.29.97-py3-none-any.whl", hash = "sha256:0df677eb2bef3ba18ac69e007633559b4426df310eee99df9882437b5faf498a"},
-    {file = "botocore-1.29.97.tar.gz", hash = "sha256:176740221714c0f031c2cd773879df096dbc0f977c63b3e2ed6a956205f02e82"},
+    {file = "botocore-1.29.105-py3-none-any.whl", hash = "sha256:06a2838daad3f346cba5460d0d3deb198225b556ff9ca729798d787fadbdebde"},
+    {file = "botocore-1.29.105.tar.gz", hash = "sha256:17c82391dfd6aaa8f96fbbb08cad2c2431ef3cda0ece89e6e6ba444c5eed45c2"},
 ]
 colorama = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},

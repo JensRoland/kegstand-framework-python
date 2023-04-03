@@ -4,4 +4,4 @@ from .decorators import (
     Auth,
     ApiError
 )
-from .api import ProustApi as Api
+from .api import KegstandApi as Api
