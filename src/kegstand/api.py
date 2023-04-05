@@ -1,4 +1,4 @@
-import logging
+import os
 
 from .utils import (
     api_response,
@@ -11,8 +11,12 @@ logger = Logger()
 # Class KegstandApi provides a container for API resources and a method to add
 # resources to the API.
 class KegstandApi:
-    def __init__(self):
+    def __init__(self, root: str = None):
         self.resources = []
+        if root is not None:
+            source_path = os.path.dirname(os.path.abspath(root))
+            logger.info(f'Adding resources from {root} : source_path={source_path}')
+            self.find_and_add_resources(source_path)
 
 
     def add_resource(self, resource):
@@ -42,7 +46,7 @@ class KegstandApi:
         def handler(event, context):
             method = None
             for resource in self.resources:
-                if event['path'].startswith(resource.route):
+                if event['path'].startswith(resource.name):
                     method, params = resource.get_matching_route(event['httpMethod'], event['path'])
                     if method is not None:
                         break
