@@ -8,4 +8,4 @@ from .decorators import (
     PublicAccess as PublicAccess,
     claim as claim,
 )
-from .api import KegstandApi as Api
+from .api import RestApi as RestApi

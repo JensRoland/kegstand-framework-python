@@ -8,9 +8,9 @@ from . import Logger
 
 logger = Logger()
 
-# Class KegstandApi provides a container for API resources and a method to add
+# Class RestApi provides a container for API resources and a method to add
 # resources to the API.
-class KegstandApi:
+class RestApi:
     def __init__(self, root: str = None):
         self.resources = []
         if root is not None:
@@ -46,7 +46,7 @@ class KegstandApi:
         def handler(event, context):
             method = None
             for resource in self.resources:
-                if event['path'].startswith(resource.name):
+                if event['path'].startswith(resource.prefix):
                     method, params = resource.get_matching_route(event['httpMethod'], event['path'])
                     if method is not None:
                         break

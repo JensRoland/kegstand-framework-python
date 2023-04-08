@@ -10,11 +10,11 @@ from . import Logger
 logger = Logger()
 
 # ApiResource provides a resource object that provides decorators for get, post, put, and delete
-# methods. The resource object also provides a name property that can be used to get the
-# resource's base name.
+# methods. The resource object also provides a prefix property that can be used to get the
+# resource's base prefix.
 class ApiResource:
-    def __init__(self, name: str, method_defaults: dict = None):
-        self.name = name
+    def __init__(self, prefix: str, method_defaults: dict = None):
+        self.prefix = prefix
         self.methods = []
         self.method_defaults = method_defaults or {}
 
@@ -30,14 +30,14 @@ class ApiResource:
     def delete(self, route: str = '/', **kwargs):
         return self._method_decorator('DELETE', route, **{**self.method_defaults, **kwargs})
 
-    # Route contains the path to the resource method, relative to the resource's name
+    # Route contains the path to the resource method, relative to the resource's prefix
     # and may include dynamic segments (e.g. `/:id`).
     def _method_decorator(self, method: str, route: str, **kwargs):
         def decorator(func):
             @wraps(func)
             def wrapper(params, event, context):
                 if event['httpMethod'] != method:
-                    return api_response({'error': f'Method not allowed for name {self.name}'}, 405)
+                    return api_response({'error': f'Method not allowed for prefix {self.prefix}'}, 405)
 
                 try:
                     data = json.loads(event['body']) if event['body'] else {}
@@ -88,7 +88,7 @@ class ApiResource:
 
             self.methods.append({
                 'route': route,
-                'full_route': self.name + route,
+                'full_route': self.prefix + route,
                 'method': method,
                 'handler': wrapper
             })
