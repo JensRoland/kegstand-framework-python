@@ -25,7 +25,6 @@ classifiers = [
 aws-lambda-powertools = {extras = ["aws-sdk"], version = "^2.10.0"}
 pyjwt = "^2.1.0"
 python = "^3.9"
-tomli = { version = "^2.0.1", python = "<3.11" }
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^6.0"
