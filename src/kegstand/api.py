@@ -24,14 +24,12 @@ class RestApi:
         self.resources.append(resource)
 
 
-    def find_and_add_resources(self, source_root: str):
+    def find_and_add_resources(self, api_source_root: str):
         # Look through folder structure, importing and adding resources to the API.
         # Expects a folder structure like this:
         # api/
-        #   resources/
-        #       [resource_name]/
-        #           any.py which exposes a resource object named `api`
-        resource_module_folders = find_resource_modules(source_root)
+        #   [resource_name].py which exposes a resource object named `api`
+        resource_module_folders = find_resource_modules(api_source_root)
         for resource_module_folder in resource_module_folders:
             # Import the resource module
             resource_module = __import__(resource_module_folder['module_path'], fromlist=resource_module_folder['fromlist'])
@@ -50,10 +48,6 @@ class RestApi:
                     method, params = resource.get_matching_route(event['httpMethod'], event['path'])
                     if method is not None:
                         break
-
-            # method = next(
-            #     (resource.get_matching_route(event['path']) for resource in self.resources), None
-            # )
 
             if method is None:
                 return api_response({'error': 'Not found'}, 404)

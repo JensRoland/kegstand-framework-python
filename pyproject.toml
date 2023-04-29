@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kegstand"
-version = "0.2.1"
+version = "0.3.0"
 description = "The Developer's Toolbelt For Accelerating Mean-Time-To-Party on AWS"
 authors = ["JensRoland <mail@jensroland.com>"]
 license = "MIT"
