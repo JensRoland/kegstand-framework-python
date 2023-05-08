@@ -15,7 +15,7 @@ class RestApi:
         self.resources = []
         if root is not None:
             source_path = os.path.dirname(os.path.abspath(root))
-            logger.info(f'Adding resources from {root} : source_path={source_path}')
+            logger.info(f"Adding resources from {root} : source_path={source_path}")
             self.find_and_add_resources(source_path)
 
 
@@ -42,17 +42,20 @@ class RestApi:
     def export(self):
         # Export the API as a single Lambda-compatible handler function
         def handler(event, context):
+            logger.debug(f"event={event}")
+            logger.debug(f"context={context}")
             method = None
             for resource in self.resources:
-                if event['path'].startswith(resource.prefix):
-                    method, params = resource.get_matching_route(event['httpMethod'], event['path'])
+                if event["path"].startswith(resource.prefix):
+                    method, params = resource.get_matching_route(event["httpMethod"], event["path"])
                     if method is not None:
                         break
 
             if method is None:
-                return api_response({'error': 'Not found'}, 404)
+                logger.error(f'No matching route found for {event["httpMethod"]} {event["path"]}')
+                return api_response({"error": "Not found"}, 404)
 
             # Call the method's handler function
-            return method['handler'](params, event, context)
+            return method["handler"](params, event, context)
 
         return handler
