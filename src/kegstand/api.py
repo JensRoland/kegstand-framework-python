@@ -14,10 +14,6 @@ class RestApi:
     def __init__(self, root: str = None):
         self.resources = []
         if root is not None:
-            # TODO: Check if this is api_src (correct) or api_src/api (incorrect, has to be the parent)
-            logger.info(f"Adding resources 1: {os.path.abspath(root)}")
-            logger.info(f"Adding resources 2: {os.path.dirname(os.path.abspath(root))}")
-            logger.info(f"Adding resources 3: {os.path.dirname(os.path.dirname(os.path.abspath(root)))}")
             source_path = os.path.dirname(os.path.dirname(os.path.abspath(root)))
             logger.info(f"Adding resources from {root} : source_path={source_path}")
             self.find_and_add_resources(source_path)
@@ -36,14 +32,6 @@ class RestApi:
         # api/public/
         #   [resource_name].py which exposes a resource object named `api`
         resource_module_folders = find_resource_modules(api_source_root)
-
-        # Output all modules found, each module contains:
-        logger.info("Kegstand framework: Found the following resource modules:")
-        for resource in resource_module_folders:
-            logger.info(f" - Name: {resource['name']}")
-            logger.info(f"   Module path: {resource['module_path']}")
-            logger.info(f"   Fromlist: {resource['fromlist']}")
-            logger.info(f"   Is public: {resource['is_public']}")
 
         for resource_module_folder in resource_module_folders:
             # Import the resource module
