@@ -5,7 +5,6 @@ from .decorators import (
     ApiResource as ApiResource,
     ApiError as ApiError,
     Auth as Auth,
-    PublicAccess as PublicAccess,
     claim as claim,
 )
 from .api import RestApi as RestApi

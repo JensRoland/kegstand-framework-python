@@ -86,17 +86,22 @@ class ApiResource:
 
                 return api_response(response, 200)
 
+            # Read auth configuration and add it to the method config object
+            auth_conditions = kwargs.get("auth", Auth())
+            if type(auth_conditions) is not list:
+                auth_conditions = [auth_conditions]
+
             self.methods.append({
                 'route': route,
                 'full_route': self.prefix + route,
                 'method': method,
-                'handler': wrapper
+                'handler': wrapper,
+                'auth': auth_conditions,
             })
 
             return wrapper
         
         return decorator
-
 
     def _call_func_with_arguments(self, method, func, params, **kwargs):
         # Calls different function signatures depending on different method types
@@ -233,19 +238,19 @@ class Auth:
         return True
 
 
-class PublicAccess(Auth):
-    def __init__(self):
-        Auth.__init__(self)
-        self.conditions.append(lambda claims: True)
+# class PublicAccess(Auth):
+#     def __init__(self):
+#         Auth.__init__(self)
+#         self.conditions.append(lambda claims: True)
 
-    def evaluate(self, _event):
-        return True
+#     def evaluate(self, _event):
+#         return True
 
-    # Override all the Auth methods to raise an error
-    def __getattr__(self, name):
-        def method(*args, **kwargs):
-            raise Exception("Public access does not support claims")
-        return method
+#     # Override all the Auth methods to raise an error
+#     def __getattr__(self, name):
+#         def method(*args, **kwargs):
+#             raise Exception("Public access does not support claims")
+#         return method
 
 
 def claim(claim_key):
