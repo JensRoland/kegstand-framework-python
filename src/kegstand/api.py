@@ -47,19 +47,21 @@ class RestApi:
         def handler(event, context):
             logger.debug(f"event={event}")
             logger.debug(f"context={context}")
+            method_resource = None
             method = None
             for resource in self.resources:
                 if event["path"].startswith(resource.prefix):
                     method, params = resource.get_matching_route(event["httpMethod"], event["path"])
                     if method is not None:
+                        method_resource = resource
                         break
 
             if method is None:
                 logger.error(f"No matching route found for {event['httpMethod']} {event['path']}")
                 return api_response({"error": f"Not found: {event['httpMethod']} {event['path']}"}, 404)
 
-            # Check if the method is public and if not, check that the user is authenticated
-            if not method["is_public"]:
+            # Check if the resource is public and if not, check that the user is authenticated
+            if not method_resource["is_public"]:
                 # Check that the user is authenticated
                 if "authorizer" not in event["requestContext"]:
                     logger.error("User is not authenticated")
