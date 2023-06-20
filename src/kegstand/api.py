@@ -55,8 +55,15 @@ class RestApi:
                         break
 
             if method is None:
-                logger.error(f'No matching route found for {event["httpMethod"]} {event["path"]}')
+                logger.error(f"No matching route found for {event['httpMethod']} {event['path']}")
                 return api_response({"error": f"Not found: {event['httpMethod']} {event['path']}"}, 404)
+
+            # Check if the method is public and if not, check that the user is authenticated
+            if not method["is_public"]:
+                # Check that the user is authenticated
+                if "authorizer" not in event["requestContext"]:
+                    logger.error("User is not authenticated")
+                    return api_response({"error": f"User is not authenticated"}, 401)
 
             # Call the method's handler function
             return method["handler"](params, event, context)

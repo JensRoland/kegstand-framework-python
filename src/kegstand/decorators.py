@@ -18,17 +18,17 @@ class ApiResource:
         self.methods = []
         self.method_defaults = method_defaults or {}
 
-    def get(self, route: str = '/', **kwargs):
-        return self._method_decorator('GET', route, **{**self.method_defaults, **kwargs})
+    def get(self, route: str = "/", **kwargs):
+        return self._method_decorator("GET", route, **{**self.method_defaults, **kwargs})
 
-    def post(self, route: str = '/', **kwargs):
-        return self._method_decorator('POST', route, **{**self.method_defaults, **kwargs})
+    def post(self, route: str = "/", **kwargs):
+        return self._method_decorator("POST", route, **{**self.method_defaults, **kwargs})
 
-    def put(self, route: str = '/', **kwargs):
-        return self._method_decorator('PUT', route, **{**self.method_defaults, **kwargs})
+    def put(self, route: str = "/", **kwargs):
+        return self._method_decorator("PUT", route, **{**self.method_defaults, **kwargs})
 
-    def delete(self, route: str = '/', **kwargs):
-        return self._method_decorator('DELETE', route, **{**self.method_defaults, **kwargs})
+    def delete(self, route: str = "/", **kwargs):
+        return self._method_decorator("DELETE", route, **{**self.method_defaults, **kwargs})
 
     # Route contains the path to the resource method, relative to the resource's prefix
     # and may include dynamic segments (e.g. `/:id`).
@@ -36,13 +36,13 @@ class ApiResource:
         def decorator(func):
             @wraps(func)
             def wrapper(params, event, context):
-                if event['httpMethod'] != method:
-                    return api_response({'error': f'Method not allowed for prefix {self.prefix}'}, 405)
+                if event["httpMethod"] != method:
+                    return api_response({"error": f"Method not allowed for prefix {self.prefix}"}, 405)
 
                 try:
-                    data = json.loads(event['body']) if event['body'] else {}
+                    data = json.loads(event["body"]) if event["body"] else {}
                 except json.JSONDecodeError:
-                    return api_response({'error': 'Invalid JSON data provided'}, 400)
+                    return api_response({"error": "Invalid JSON data provided"}, 400)
 
                 try:
                     # Authorization
@@ -54,22 +54,22 @@ class ApiResource:
                     # Validate each auth condition
                     for auth_condition in auth_conditions:
                         if not auth_condition.evaluate(event):
-                            return api_response({'error': 'Unauthorized'}, 401)
+                            return api_response({"error": "Unauthorized"}, 401)
 
-                    # If the func has a 'claims' argument, then we have to pass
+                    # If the func has a "claims" argument, then we have to pass
                     # in the authorized user properties (claims) from the authorizer
                     claims = None
-                    if 'claims' in inspect.signature(func).parameters:
-                        if 'authorizer' not in event['requestContext']:
-                            return api_response({'error': 'Unauthorized (missing authorizer context)'}, 401)
-                        claims = event['requestContext']['authorizer']['claims']
+                    if "claims" in inspect.signature(func).parameters:
+                        if "authorizer" not in event["requestContext"] or "claims" not in event["requestContext"]["authorizer"]:
+                            return api_response({"error": "Unauthorized (missing authorizer context)"}, 401)
+                        claims = event["requestContext"]["authorizer"]["claims"]
 
                     # Other injected arguments
-                    # If the func has a 'query' argument, then we have to pass
+                    # If the func has a "query" argument, then we have to pass
                     # in the query string parameters from the event
                     query = None
-                    if 'query' in inspect.signature(func).parameters:
-                        query = event['queryStringParameters'] or {}
+                    if "query" in inspect.signature(func).parameters:
+                        query = event["queryStringParameters"] or {}
 
                     # Call the function with the authorized user properties
                     response = self._call_func_with_arguments(
@@ -92,11 +92,11 @@ class ApiResource:
                 auth_conditions = [auth_conditions]
 
             self.methods.append({
-                'route': route,
-                'full_route': self.prefix + route,
-                'method': method,
-                'handler': wrapper,
-                'auth': auth_conditions,
+                "route": route,
+                "full_route": self.prefix + route,
+                "method": method,
+                "handler": wrapper,
+                "auth": auth_conditions,
             })
 
             return wrapper
@@ -119,16 +119,16 @@ class ApiResource:
         func_kwargs = {}
         if len(params) > 0:
             func_kwargs["params"] = params
-        if method in ['POST', 'PUT', 'PATCH']:
-            func_kwargs["data"] = kwargs.get('data', {})
+        if method in ["POST", "PUT", "PATCH"]:
+            func_kwargs["data"] = kwargs.get("data", {})
 
-        # Add querystring parameters if a 'query' parameter was passed in
-        query = kwargs.get('query', None)
+        # Add querystring parameters if a "query" parameter was passed in
+        query = kwargs.get("query", None)
         if query is not None:
             func_kwargs["query"] = query
 
-        # Add authorized user properties (claims) if a 'claims' parameter was passed in
-        claims = kwargs.get('claims', None)
+        # Add authorized user properties (claims) if a "claims" parameter was passed in
+        claims = kwargs.get("claims", None)
         if claims is not None:
             func_kwargs["claims"] = claims
 
@@ -146,20 +146,20 @@ class ApiResource:
 
     def _route_matcher(self, httpMethod, request_uri, method):
         # If the method doesn't match, the routes don't match
-        if httpMethod != method['method']:
+        if httpMethod != method["method"]:
             return None
         
         # Split the request_uri into segments
         # Remove trailing slash if present (/hello/world/ -> /hello/world)
-        if request_uri.endswith('/'):
+        if request_uri.endswith("/"):
             request_uri = request_uri[:-1]
-        segments = request_uri.split('/')
+        segments = request_uri.split("/")
 
         # And same for the method's full route
-        method_route = method['full_route']
-        if method_route.endswith('/'):
+        method_route = method["full_route"]
+        if method_route.endswith("/"):
             method_route = method_route[:-1]
-        method_segments = method_route.split('/')
+        method_segments = method_route.split("/")
 
         # If the number of segments doesn't match, the routes don't match
         if len(segments) != len(method_segments):
@@ -169,7 +169,7 @@ class ApiResource:
         route_params = {}
         for i in range(len(segments)):
             # If the segment is a dynamic segment, it matches
-            if method_segments[i].startswith(':'):
+            if method_segments[i].startswith(":"):
                 route_params[method_segments[i][1:]] = unquote_plus(segments[i])
                 continue
 
@@ -229,28 +229,16 @@ class Auth:
         return self
 
     def evaluate(self, event):
-        if 'authorizer' not in event['requestContext']:
+        if len(self.conditions) == 0:
+            return True
+
+        if "authorizer" not in event["requestContext"] or "claims" not in event["requestContext"]["authorizer"]:
             return False
-        claims = event['requestContext']['authorizer']['claims']
+        claims = event["requestContext"]["authorizer"]["claims"]
         for condition in self.conditions:
             if not condition(claims):
                 return False
         return True
-
-
-# class PublicAccess(Auth):
-#     def __init__(self):
-#         Auth.__init__(self)
-#         self.conditions.append(lambda claims: True)
-
-#     def evaluate(self, _event):
-#         return True
-
-#     # Override all the Auth methods to raise an error
-#     def __getattr__(self, name):
-#         def method(*args, **kwargs):
-#             raise Exception("Public access does not support claims")
-#         return method
 
 
 def claim(claim_key):
@@ -267,7 +255,7 @@ class ApiError(Exception):
 
     def to_dict(self):
         rv = dict()
-        rv['error'] = self.error_message
+        rv["error"] = self.error_message
         return rv
 
     def to_api_response(self):
