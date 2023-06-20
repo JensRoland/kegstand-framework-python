@@ -19,9 +19,12 @@ class RestApi:
             self.find_and_add_resources(source_path)
 
 
-    def add_resource(self, resource):
+    def add_resource(self, resource, is_public: bool = False):
         # Resource is a ApiResource object
-        self.resources.append(resource)
+        self.resources.append({
+            "resource": resource,
+            "is_public": is_public,
+        })
 
 
     def find_and_add_resources(self, api_source_root: str):
@@ -37,7 +40,7 @@ class RestApi:
             # Import the resource module
             resource_module = __import__(resource_module_folder['module_path'], fromlist=resource_module_folder['fromlist'])
             # Get the resource object from the module and add it to the API
-            self.add_resource(getattr(resource_module, 'api'))
+            self.add_resource(getattr(resource_module, 'api'), resource_module_folder['is_public'])
 
         return self.resources
 
@@ -47,13 +50,14 @@ class RestApi:
         def handler(event, context):
             logger.debug(f"event={event}")
             logger.debug(f"context={context}")
-            method_resource = None
+            resource_is_public = False
             method = None
-            for resource in self.resources:
+            for resource_tuple in self.resources:
+                resource = resource_tuple["resource"]
                 if event["path"].startswith(resource.prefix):
                     method, params = resource.get_matching_route(event["httpMethod"], event["path"])
                     if method is not None:
-                        method_resource = resource
+                        resource_is_public = resource_tuple["is_public"]
                         break
 
             if method is None:
@@ -61,7 +65,7 @@ class RestApi:
                 return api_response({"error": f"Not found: {event['httpMethod']} {event['path']}"}, 404)
 
             # Check if the resource is public and if not, check that the user is authenticated
-            if not method_resource["is_public"]:
+            if not resource_is_public:
                 # Check that the user is authenticated
                 if "authorizer" not in event["requestContext"]:
                     logger.error("User is not authenticated")
