@@ -10,8 +10,30 @@ on:
       - LICENSE
 
 jobs:
-  lint-test:
+  lint:
     runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+
+      - name: Install Poetry
+        run: pipx install poetry==1.8.5
+
+      - name: Install dependencies (incl. dev)
+        run: poetry install --with dev
+
+      - name: Linting
+        run: poetry run ruff check --output-format=github
+
+      - name: Type checking
+        run: poetry run mypy --config-file pyproject.toml src tests
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
 
     strategy:
       fail-fast: false
@@ -32,11 +54,5 @@ jobs:
       - name: Install dependencies (incl. dev)
         run: poetry install --with dev
 
-      - name: Linting
-        run: poetry run ruff check --target-version ${{ matrix.python-version }}
-
-      - name: Type checking
-        run: poetry run mypy --config-file pyproject.toml --python-version=${{ matrix.python-version }} src tests
-      
       - name: Unit testing
         run: make test
