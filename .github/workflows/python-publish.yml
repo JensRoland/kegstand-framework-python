@@ -81,11 +81,11 @@ jobs:
     # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
     environment:
       name: pypi
-      url: https://pypi.org/project/kegstandcli/
+      url: https://pypi.org/project/kegstand/
       #
       # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
       # ALTERNATIVE: exactly, uncomment the following line instead:
-      # url: https://pypi.org/project/kegstandcli/${{ github.event.release.name }}
+      # url: https://pypi.org/project/kegstand/${{ github.event.release.name }}
 
     steps:
       - name: Retrieve release distributions
