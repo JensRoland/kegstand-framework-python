@@ -1,21 +1,22 @@
 import inspect
 import json
-
 from functools import wraps
+from typing import Any
 from urllib.parse import unquote_plus
 
-from .utils import api_response
 from . import Logger
+from .utils import api_response
 
 logger = Logger()
+
 
 # ApiResource provides a resource object that provides decorators for get, post, put, and delete
 # methods. The resource object also provides a prefix property that can be used to get the
 # resource's base prefix.
 class ApiResource:
-    def __init__(self, prefix: str, method_defaults: dict = None):
+    def __init__(self, prefix: str, method_defaults: dict | None = None):
         self.prefix = prefix
-        self.methods = []
+        self.methods: list[dict[str, Any]] = []
         self.method_defaults = method_defaults or {}
 
     def get(self, route: str = "/", **kwargs):
@@ -35,9 +36,11 @@ class ApiResource:
     def _method_decorator(self, method: str, route: str, **kwargs):
         def decorator(func):
             @wraps(func)
-            def wrapper(params, event, context):
+            def wrapper(params, event, _context):
                 if event["httpMethod"] != method:
-                    return api_response({"error": f"Method not allowed for prefix {self.prefix}"}, 405)
+                    return api_response(
+                        {"error": f"Method not allowed for prefix {self.prefix}"}, 405
+                    )
 
                 try:
                     data = json.loads(event["body"]) if event["body"] else {}
@@ -48,7 +51,7 @@ class ApiResource:
                     # Authorization
                     # Defaults to checking for a valid requestContext
                     auth_conditions = kwargs.get("auth", Auth())
-                    if type(auth_conditions) is not list:
+                    if not isinstance(auth_conditions, list):
                         auth_conditions = [auth_conditions]
 
                     # Validate each auth condition
@@ -60,8 +63,13 @@ class ApiResource:
                     # in the authorized user properties (claims) from the authorizer
                     claims = None
                     if "claims" in inspect.signature(func).parameters:
-                        if "authorizer" not in event["requestContext"] or "claims" not in event["requestContext"]["authorizer"]:
-                            return api_response({"error": "Unauthorized (missing authorizer context)"}, 401)
+                        if (
+                            "authorizer" not in event["requestContext"]
+                            or "claims" not in event["requestContext"]["authorizer"]
+                        ):
+                            return api_response(
+                                {"error": "Unauthorized (missing authorizer context)"}, 401
+                            )
                         claims = event["requestContext"]["authorizer"]["claims"]
 
                     # Other injected arguments
@@ -88,19 +96,21 @@ class ApiResource:
 
             # Read auth configuration and add it to the method config object
             auth_conditions = kwargs.get("auth", Auth())
-            if type(auth_conditions) is not list:
+            if not isinstance(auth_conditions, list):
                 auth_conditions = [auth_conditions]
 
-            self.methods.append({
-                "route": route,
-                "full_route": self.prefix + route,
-                "method": method,
-                "handler": wrapper,
-                "auth": auth_conditions,
-            })
+            self.methods.append(
+                {
+                    "route": route,
+                    "full_route": self.prefix + route,
+                    "method": method,
+                    "handler": wrapper,
+                    "auth": auth_conditions,
+                }
+            )
 
             return wrapper
-        
+
         return decorator
 
     def _call_func_with_arguments(self, method, func, params, **kwargs):
@@ -123,32 +133,30 @@ class ApiResource:
             func_kwargs["data"] = kwargs.get("data", {})
 
         # Add querystring parameters if a "query" parameter was passed in
-        query = kwargs.get("query", None)
+        query = kwargs.get("query")
         if query is not None:
             func_kwargs["query"] = query
 
         # Add authorized user properties (claims) if a "claims" parameter was passed in
-        claims = kwargs.get("claims", None)
+        claims = kwargs.get("claims")
         if claims is not None:
             func_kwargs["claims"] = claims
 
         return func(**func_kwargs)
 
-
-    def get_matching_route(self, httpMethod: str, request_uri: str):
+    def get_matching_route(self, httpmethod: str, request_uri: str):
         for method in self.methods:
-            params = self._route_matcher(httpMethod, request_uri, method)
+            params = self._route_matcher(httpmethod, request_uri, method)
             if params is not None:
                 return method, params
-        
+
         return None, None
 
-
-    def _route_matcher(self, httpMethod, request_uri, method):
+    def _route_matcher(self, httpmethod, request_uri, method):
         # If the method doesn't match, the routes don't match
-        if httpMethod != method["method"]:
+        if httpmethod != method["method"]:
             return None
-        
+
         # Split the request_uri into segments
         # Remove trailing slash if present (/hello/world/ -> /hello/world)
         if request_uri.endswith("/"):
@@ -191,7 +199,9 @@ class Auth:
 
     def eq(self, value, case_sensitive=True):
         if not case_sensitive:
-            self.conditions.append(lambda claims: claims.get(self.current_claim).lower() == value.lower())
+            self.conditions.append(
+                lambda claims: claims.get(self.current_claim).lower() == value.lower()
+            )
         else:
             self.conditions.append(lambda claims: claims.get(self.current_claim) == value)
 
@@ -199,7 +209,13 @@ class Auth:
 
     def contains(self, value, case_sensitive=True):
         if not case_sensitive:
-            self.conditions.append(lambda claims: value.lower() in [claim_list_item.lower() for claim_list_item in claims.get(self.current_claim, [])])
+            self.conditions.append(
+                lambda claims: value.lower()
+                in [
+                    claim_list_item.lower()
+                    for claim_list_item in claims.get(self.current_claim, [])
+                ]
+            )
         else:
             self.conditions.append(lambda claims: value in claims.get(self.current_claim, []))
         return self
@@ -225,20 +241,22 @@ class Auth:
         return self
 
     def not_in_collection(self, collection):
-        self.conditions.append(lambda claims: claims.get(self.current_claim, None) not in collection)
+        self.conditions.append(
+            lambda claims: claims.get(self.current_claim, None) not in collection
+        )
         return self
 
     def evaluate(self, event):
         if len(self.conditions) == 0:
             return True
 
-        if "authorizer" not in event["requestContext"] or "claims" not in event["requestContext"]["authorizer"]:
+        if (
+            "authorizer" not in event["requestContext"]
+            or "claims" not in event["requestContext"]["authorizer"]
+        ):
             return False
         claims = event["requestContext"]["authorizer"]["claims"]
-        for condition in self.conditions:
-            if not condition(claims):
-                return False
-        return True
+        return all(condition(claims) for condition in self.conditions)
 
 
 def claim(claim_key):
@@ -254,9 +272,7 @@ class ApiError(Exception):
         logger.warning(f"API Error (status {status_code}): {error_message}")
 
     def to_dict(self):
-        rv = dict()
-        rv["error"] = self.error_message
-        return rv
+        return {"error": self.error_message}
 
     def to_api_response(self):
         return api_response(self.to_dict(), self.status_code)
