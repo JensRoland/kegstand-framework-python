@@ -113,6 +113,14 @@ def test_auth_claim_eq():
     assert auth.evaluate(event) is False
 
 
+def test_auth_claim_eq_case_insensitive():
+    auth = claim("role").eq("Admin", case_sensitive=False)
+
+    # Test matching claim with different case
+    event = {"requestContext": {"authorizer": {"claims": {"role": "admin"}}}}
+    assert auth.evaluate(event) is True
+
+
 def test_auth_claim_contains():
     auth = claim("groups").contains("admins")
 
@@ -123,6 +131,14 @@ def test_auth_claim_contains():
     # Test non-matching claim
     event = {"requestContext": {"authorizer": {"claims": {"groups": ["users"]}}}}
     assert auth.evaluate(event) is False
+
+
+def test_auth_claim_contains_case_insensitive():
+    auth = claim("groups").contains("Admins", case_sensitive=False)
+
+    # Test matching claim with different case
+    event = {"requestContext": {"authorizer": {"claims": {"groups": ["users", "admins"]}}}}
+    assert auth.evaluate(event) is True
 
 
 def test_auth_claim_comparison():
@@ -146,6 +162,13 @@ def test_auth_claim_collection():
 
     # Test role not in collection
     event = {"requestContext": {"authorizer": {"claims": {"role": "user"}}}}
+    assert auth.evaluate(event) is False
+
+
+def test_auth_missing_claim():
+    auth = claim("nonexistent").eq("value")
+
+    event = {"requestContext": {"authorizer": {"claims": {"role": "admin"}}}}
     assert auth.evaluate(event) is False
 
 
@@ -209,3 +232,26 @@ def test_route_handler_with_query_params():
     response = method["handler"](params, event, {})
     assert response["statusCode"] == 200
     assert json.loads(response["body"]) == {"query": {"q": "test", "page": "1"}}
+
+
+def test_method_not_allowed():
+    resource = ApiResource("/api")
+
+    @resource.get("/test")
+    def get_test():
+        return {"message": "success"}
+
+    # Try to POST to a GET endpoint
+    event = {"httpMethod": "POST", "path": "/api/test", "body": None, "requestContext": {}}
+
+    method, params = resource.get_matching_route("GET", "/api/test")
+    response = method["handler"](params, event, {})
+    assert response["statusCode"] == 405
+    assert "Method not allowed" in response["body"]
+
+
+def test_api_error_with_custom_status():
+    error = ApiError("Resource not found", 404)
+    response = error.to_api_response()
+    assert response["statusCode"] == 404
+    assert json.loads(response["body"]) == {"error": "Resource not found"}

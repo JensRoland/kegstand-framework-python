@@ -129,7 +129,7 @@ class ApiResource:
         func_kwargs = {}
         if len(params) > 0:
             func_kwargs["params"] = params
-        if method in ["POST", "PUT", "PATCH"]:
+        if method in ["POST", "PUT"]:  # TODO: add support for PATCH
             func_kwargs["data"] = kwargs.get("data", {})
 
         # Add querystring parameters if a "query" parameter was passed in
