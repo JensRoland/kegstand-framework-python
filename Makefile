@@ -35,4 +35,4 @@ lint: lint-check mypy
 #* Test
 .PHONY: test
 test:
-	poetry run pytest -n auto -c pyproject.toml --cov-report=term --cov=src tests
+	poetry run pytest -c pyproject.toml --cov-report=term --cov=src tests
