@@ -1,31 +1,33 @@
 import os
+from typing import Any
 
+from . import Logger
 from .utils import (
     api_response,
     find_resource_modules,
 )
-from . import Logger
 
 logger = Logger()
+
 
 # Class RestApi provides a container for API resources and a method to add
 # resources to the API.
 class RestApi:
-    def __init__(self, root: str = None):
-        self.resources = []
+    def __init__(self, root: str | None = None):
+        self.resources: list[dict[str, Any]] = []
         if root is not None:
             source_path = os.path.dirname(os.path.dirname(os.path.abspath(root)))
             logger.info(f"Adding resources from {root} : source_path={source_path}")
             self.find_and_add_resources(source_path)
 
-
     def add_resource(self, resource, is_public: bool = False):
         # Resource is a ApiResource object
-        self.resources.append({
-            "resource": resource,
-            "is_public": is_public,
-        })
-
+        self.resources.append(
+            {
+                "resource": resource,
+                "is_public": is_public,
+            }
+        )
 
     def find_and_add_resources(self, api_source_root: str):
         # Look through folder structure, importing and adding resources to the API.
@@ -38,12 +40,13 @@ class RestApi:
 
         for resource_module_folder in resource_module_folders:
             # Import the resource module
-            resource_module = __import__(resource_module_folder['module_path'], fromlist=resource_module_folder['fromlist'])
+            resource_module = __import__(
+                resource_module_folder["module_path"], fromlist=resource_module_folder["fromlist"]
+            )
             # Get the resource object from the module and add it to the API
-            self.add_resource(getattr(resource_module, 'api'), resource_module_folder['is_public'])
+            self.add_resource(resource_module.api, resource_module_folder["is_public"])
 
         return self.resources
-
 
     def export(self):
         # Export the API as a single Lambda-compatible handler function
@@ -62,14 +65,14 @@ class RestApi:
 
             if method is None:
                 logger.error(f"No matching route found for {event['httpMethod']} {event['path']}")
-                return api_response({"error": f"Not found: {event['httpMethod']} {event['path']}"}, 404)
+                return api_response(
+                    {"error": f"Not found: {event['httpMethod']} {event['path']}"}, 404
+                )
 
             # Check if the resource is public and if not, check that the user is authenticated
-            if not resource_is_public:
-                # Check that the user is authenticated
-                if "authorizer" not in event["requestContext"]:
-                    logger.error("User is not authenticated")
-                    return api_response({"error": f"User is not authenticated"}, 401)
+            if not resource_is_public and "authorizer" not in event["requestContext"]:
+                logger.error("User is not authenticated")
+                return api_response({"error": "User is not authenticated"}, 401)
 
             # Call the method's handler function
             return method["handler"](params, event, context)

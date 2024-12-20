@@ -1,0 +1,42 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - '*.md'
+      - docs/**
+      - ChangeLog
+      - LICENSE
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        run: pipx install poetry==1.8.5
+
+      - name: Install dependencies (incl. dev)
+        run: poetry install --with dev
+
+      - name: Linting
+        run: poetry run ruff check --target-version ${{ matrix.python-version }}
+
+      - name: Type checking
+        run: poetry run mypy --config-file pyproject.toml --python-version=${{ matrix.python-version }} src tests
+      
+      - name: Unit testing
+        run: make test
